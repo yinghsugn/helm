@@ -1,0 +1,111 @@
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+parameters:
+  - name: "VERSION"
+    type: string
+    default: "v3.6.3"
+  - name: "PREVIOUS_RELEASE"
+    type: string
+    default: "v3.6.3"
+
+variables:
+  - name: VERSION
+    value: "${{ parameters.VERSION }}"
+  - name: PREVIOUS_RELEASE
+    value: "${{ parameters.PREVIOUS_RELEASE }}"
+  - name: PUBLISH_ARC
+    value: "windows-amd64"
+
+steps:
+- task: GoTool@0
+  inputs:
+    version: '1.16.5'
+
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      echo 'The binary will be $(GOPATH)/bin/golangci-lint ...'
+      curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b $(GOPATH)/bin v1.40.1
+      echo 'Finish installation ...'
+      golangci-lint --version
+  displayName: 'Install golangci-lint for unit-test'
+
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      sudo apt install make -y
+      echo 'Finish installing make ...'
+      make --version
+  displayName: 'Install make'
+
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      echo 'Ready to build helm $(VERSION) ...'
+      make build
+      echo 'Finish building project ...'
+      ls $(BINDIR)
+  displayName: 'Build project'
+
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      echo 'make gen-test-golden ...'
+      make gen-test-golden
+#      echo 'generate certificate ...'
+#      sudo ./testdata/generate.sh
+#      ls testdata
+#      echo 'make test (build, test-style, test-unit)...'
+#      make test
+  displayName: 'Unit test'
+
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      echo 'make info ...'
+      make info
+      echo 'make clean ...'
+      make clean
+      echo 'make build-cross ...'
+      make build-cross
+      echo 'check content ...'
+      ls _dist
+  displayName: 'Build-cross'
+
+- template: esrp-sign.yml
+  parameters:
+    folderPath: "$(System.DefaultWorkingDirectory)/_dist"
+    isEnableSign: true
+
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      echo 'check content (before)...'
+      ls _dist
+      echo 'make dist ...'
+      make dist
+      echo 'check content ...'
+      ls _dist
+      echo 'Done ...'
+      echo 'Ready to publish file: helm-$(VERSION)-$(PUBLISH_ARC) ...'
+  displayName: 'Release'
+
+- task: CopyFiles@2
+  inputs:
+    sourceFolder: '$(System.DefaultWorkingDirectory)/_dist'
+    Contents: |
+      helm-$(VERSION)-$(PUBLISH_ARC).zip
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+- task: PublishBuildArtifacts@1
+  inputs:
+     artifactName: 'release'

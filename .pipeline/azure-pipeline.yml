@@ -1,0 +1,63 @@
+# Go
+# Build your Go project.
+# Add steps that test, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/go
+# SET UP GO
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  GOBIN:  '$(GOPATH)/bin' # Go binaries path
+  GOROOT: '$(Agent.BuildDirectory)/go' # Go installation path
+  GOPATH: '$(system.defaultWorkingDirectory)/gopath' # Go workspace path
+  modulePath: '$(GOPATH)/src/github.com/$(build.repository.name)/cmd/helm' # Path to the module's code
+
+steps:
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      cat 'ls System.DefaultWorkingDirectory'
+      ls $(System.DefaultWorkingDirectory)
+      cat 'ls Build.ArtifactStagingDirectory'
+      ls $(Build.ArtifactStagingDirectory)
+  displayName: "Check result (before)"
+- task: GoTool@0
+  inputs:
+    version: '1.16'
+- task: Go@0
+  inputs:
+    command: 'get'
+    arguments: '-d'
+    workingDirectory: '$(System.DefaultWorkingDirectory)/cmd/helm'
+  # BUILD
+- task: Go@0
+  inputs:
+    command: 'build'
+    arguments: '-o $(Build.ArtifactStagingDirectory)'
+    workingDirectory: '$(System.DefaultWorkingDirectory)/cmd/helm'
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      cat 'ls System.DefaultWorkingDirectory'
+      ls $(System.DefaultWorkingDirectory)
+      cat 'ls Build.ArtifactStagingDirectory'
+      ls $(Build.ArtifactStagingDirectory)
+  displayName: Check result (after)'
+- task: CopyFiles@2
+  inputs:
+    sourceFolder: '$(System.DefaultWorkingDirectory)'
+    Contents: LICENSE
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+- task: CopyFiles@2
+  inputs:
+    sourceFolder: '$(System.DefaultWorkingDirectory)'
+    Contents: README.md
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+- task: PublishBuildArtifacts@1
+  inputs:
+     artifactName: '$(Agent.OS)_$(Agent.OSArchitecture)'
