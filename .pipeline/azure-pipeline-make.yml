@@ -84,7 +84,8 @@ steps:
 - template: esrp-sign.yml
   parameters:
     folderPath: "$(System.DefaultWorkingDirectory)/_dist"
-    isEnableSign: true
+    isInstallDotNet: true
+    isWindowsSign: true
 
 - task: Bash@3
   inputs:
@@ -100,12 +101,22 @@ steps:
       echo 'Ready to publish file: helm-$(VERSION)-$(PUBLISH_ARC) ...'
   displayName: 'Release'
 
+- template: esrp-sign.yml
+  parameters:
+    folderPath: "$(System.DefaultWorkingDirectory)/_dist"
+    isInstallDotNet: false
+    isLinuxSign: true
+    linuxFilePattern: "*.tar.gz"
+
 - task: CopyFiles@2
   inputs:
     sourceFolder: '$(System.DefaultWorkingDirectory)/_dist'
     Contents: |
-      helm-$(VERSION)-$(PUBLISH_ARC).zip
+       helm-$(VERSION)-$(PUBLISH_ARC).zip
+       helm-*.tar.gz
+       *.md
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
+    
 - task: PublishBuildArtifacts@1
   inputs:
      artifactName: 'release'
