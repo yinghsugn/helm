@@ -91,6 +91,44 @@ steps:
   inputs:
     targetType: 'inline'
     script: |
+      mkdir $(System.DefaultWorkingDirectory)/_sign
+      cp -rf $(System.DefaultWorkingDirectory)/_dist $(System.DefaultWorkingDirectory)/_sign
+  displayName: 'Copy files for linux signing'
+
+- template: esrp-sign.yml
+  parameters:
+    folderPath: "$(System.DefaultWorkingDirectory)/_sign"
+    isInstallDotNet: false
+    isLinuxSign: true
+    linuxFilePattern: "helm"
+
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      cd $(System.DefaultWorkingDirectory)/_sign
+      mv darwin-amd64/helm darwin-amd64/helm.asc
+      cp darwin-amd64/helm.asc $(System.DefaultWorkingDirectory)/_dist      
+      mv darwin-arm64/helm darwin-arm64/helm.asc
+      cp darwin-arm64/helm.asc $(System.DefaultWorkingDirectory)/_dist      
+      mv linux-386/helm linux-386/helm.asc
+      cp linux-386/helm.asc $(System.DefaultWorkingDirectory)/_dist      
+      mv linux-amd64/helm linux-amd64/helm.asc
+      cp linux-amd64/helm.asc $(System.DefaultWorkingDirectory)/_dist      
+      mv linux-arm/helm linux-arm/helm.asc
+      cp linux-arm/helm.asc $(System.DefaultWorkingDirectory)/_dist      
+      mv linux-arm64/helm linux-arm64/helm.asc
+      cp linux-arm64/helm.asc $(System.DefaultWorkingDirectory)/_dist      
+      mv linux-ppc64le/helm linux-ppc64le/helm.asc
+      cp linux-ppc64le/helm.asc $(System.DefaultWorkingDirectory)/_dist
+      mv linux-s390x/helm linux-s390x/helm.asc
+      cp linux-s390x/helm.asc $(System.DefaultWorkingDirectory)/_dist
+  displayName: 'Copy .asc files'
+
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
       echo 'check content (before)...'
       ls _dist
       echo 'make dist ...'
@@ -98,8 +136,7 @@ steps:
       echo 'check content ...'
       ls _dist
       echo 'Done ...'
-      echo 'Ready to publish file: helm-$(VERSION)-$(PUBLISH_ARC) ...'
-  displayName: 'Release'
+  displayName: 'Archive'
 
 - template: esrp-sign.yml
   parameters:
