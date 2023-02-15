@@ -139,12 +139,30 @@ steps:
       echo 'Done ...'
   displayName: 'Archive'
 
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      mkdir $(System.DefaultWorkingDirectory)/_sign2
+      cp -rf $(System.DefaultWorkingDirectory)/_dist/*.tar.gz $(System.DefaultWorkingDirectory)/_sign2
+  displayName: 'Copy files for linux signing'
+
 - template: esrp-sign.yml
   parameters:
-    folderPath: "$(System.DefaultWorkingDirectory)/_dist"
+    folderPath: "$(System.DefaultWorkingDirectory)/_sign2"
     isInstallDotNet: false
     isLinuxSign: true
     linuxFilePattern: "*.tar.gz"
+
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      cd $(System.DefaultWorkingDirectory)/_sign2
+      ls
+      mv helm-*.tar.gz helm-*.tar.gz.asc
+      ls
+  displayName: 'Rename .asc files'
 
 - task: CopyFiles@2
   inputs:
@@ -152,9 +170,15 @@ steps:
     Contents: |
        helm-$(VERSION)-$(PUBLISH_ARC).zip
        helm-*.tar.gz
-       *.md
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
-    
+
+- task: CopyFiles@2
+  inputs:
+    sourceFolder: '$(System.DefaultWorkingDirectory)/_sign2'
+    Contents: |
+       helm-*.tar.gz.asc
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+
 - task: PublishBuildArtifacts@1
   inputs:
      artifactName: 'release'
