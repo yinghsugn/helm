@@ -92,7 +92,7 @@ steps:
     targetType: 'inline'
     script: |
       mkdir $(System.DefaultWorkingDirectory)/_sign
-      cp -rf $(System.DefaultWorkingDirectory)/_dist $(System.DefaultWorkingDirectory)/_sign
+      cp -rf $(System.DefaultWorkingDirectory)/_dist/* $(System.DefaultWorkingDirectory)/_sign
   displayName: 'Copy files for linux signing'
 
 - template: esrp-sign.yml
