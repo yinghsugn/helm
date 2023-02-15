@@ -160,14 +160,14 @@ steps:
     script: |
       cd $(System.DefaultWorkingDirectory)/_sign2
       ls
-      helm-$(VERSION)-darwin-amd64.tar.gz helm-$(VERSION)-darwin-amd64.tar.gz.asc
-      helm-$(VERSION)-darwin-arm64.tar.gz helm-$(VERSION)-darwin-arm64.tar.gz.asc
-      helm-$(VERSION)-linux-386.tar.gz helm-$(VERSION)-linux-386.tar.gz.asc
-      helm-$(VERSION)-linux-amd64.tar.gz helm-$(VERSION)-linux-amd64.tar.gz.asc
-      helm-$(VERSION)-linux-arm.tar.gz helm-$(VERSION)-linux-arm.tar.gz.asc
-      helm-$(VERSION)-linux-arm64.tar.gz helm-$(VERSION)-linux-arm64.tar.gz.asc
-      helm-$(VERSION)-linux-ppc64le.tar.gz helm-$(VERSION)-linux-ppc64le.tar.gz.asc
-      helm-$(VERSION)-linux-s390x.tar.gz helm-$(VERSION)-linux-s390x.tar.gz.asc
+      mv helm-$(VERSION)-darwin-amd64.tar.gz helm-$(VERSION)-darwin-amd64.tar.gz.asc
+      mv helm-$(VERSION)-darwin-arm64.tar.gz helm-$(VERSION)-darwin-arm64.tar.gz.asc
+      mv helm-$(VERSION)-linux-386.tar.gz helm-$(VERSION)-linux-386.tar.gz.asc
+      mv helm-$(VERSION)-linux-amd64.tar.gz helm-$(VERSION)-linux-amd64.tar.gz.asc
+      mv helm-$(VERSION)-linux-arm.tar.gz helm-$(VERSION)-linux-arm.tar.gz.asc
+      mv helm-$(VERSION)-linux-arm64.tar.gz helm-$(VERSION)-linux-arm64.tar.gz.asc
+      mv helm-$(VERSION)-linux-ppc64le.tar.gz helm-$(VERSION)-linux-ppc64le.tar.gz.asc
+      mv helm-$(VERSION)-linux-s390x.tar.gz helm-$(VERSION)-linux-s390x.tar.gz.asc
       ls
   displayName: 'Rename .asc files'
 
