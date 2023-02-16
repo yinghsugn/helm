@@ -17,8 +17,6 @@ variables:
     value: "${{ parameters.VERSION }}"
   - name: PREVIOUS_RELEASE
     value: "${{ parameters.PREVIOUS_RELEASE }}"
-  - name: PUBLISH_ARC
-    value: "windows-amd64"
 
 steps:
 - task: GoTool@0
@@ -175,7 +173,7 @@ steps:
   inputs:
     sourceFolder: '$(System.DefaultWorkingDirectory)/_dist'
     Contents: |
-       helm-$(VERSION)-$(PUBLISH_ARC).zip
+       helm-$(VERSION)-windows-amd64.zip
        helm-*.tar.gz
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
