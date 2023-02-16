@@ -2,25 +2,37 @@ parameters:
   - name: "folderPath"
     type: string
     default: $(Build.ArtifactStagingDirectory)/package
-  - name: "isEnableSign"
+  - name: "isInstallDotNet"
+    type: boolean
+    default: true
+  - name: "isWindowsSign"
     type: boolean
     default: false
+  - name: "windowsFilePattern"
+    type: string
+    default: "*.exe"
+  - name: "isLinuxSign"
+    type: boolean
+    default: false
+  - name: "linuxFilePattern"
+    type: string
+    default: "helm"
 
 steps:
-  - ? ${{ if eq(parameters.isEnableSign, true) }}
+  - ? ${{ if eq(parameters.isInstallDotNet, true) }}
     : - task: UseDotNet@2
         displayName: '✔ Use .NET Core sdk'
         inputs:
           packageType: sdk
           version: 2.1.x
           installationPath: $(Agent.ToolsDirectory)/dotnet
-
-      - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
-        displayName: "✔ ESRP CodeSigning"
+  - ? ${{ if eq(parameters.isWindowsSign, true) }}
+    : - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+        displayName: "✔ ESRP CodeSigning (windows)"
         inputs:
           ConnectedServiceName: "ESRP-AED.LinuxPackageSigningForPmc"
           FolderPath: "${{ parameters.folderPath }}"
-          Pattern: "*.exe"
+          Pattern: "${{ parameters.windowsFilePattern }}"
           signConfigType: inlineSignParams
           inlineOperation: |
             [
@@ -40,6 +52,24 @@ steps:
                     {
                         "KeyCode" : "CP-230012",
                         "OperationCode" : "SigntoolVerify",
+                        "Parameters" : {},
+                        "ToolName" : "sign",
+                        "ToolVersion" : "1.0"
+                    }
+            ]
+  - ? ${{ if eq(parameters.isLinuxSign, true) }}
+    : - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+        displayName: "✔ ESRP CodeSigning (linux)"
+        inputs:
+          ConnectedServiceName: "ESRP-AED.LinuxPackageSigningForPmc"
+          FolderPath: "${{ parameters.folderPath }}"
+          Pattern: "${{ parameters.linuxFilePattern }}"
+          signConfigType: inlineSignParams
+          inlineOperation: |
+            [
+                    {
+                        "KeyCode" : "CP-450779-Pgp",
+                        "OperationCode" : "LinuxSign",
                         "Parameters" : {},
                         "ToolName" : "sign",
                         "ToolVersion" : "1.0"

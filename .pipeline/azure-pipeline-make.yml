@@ -17,8 +17,6 @@ variables:
     value: "${{ parameters.VERSION }}"
   - name: PREVIOUS_RELEASE
     value: "${{ parameters.PREVIOUS_RELEASE }}"
-  - name: PUBLISH_ARC
-    value: "windows-amd64"
 
 steps:
 - task: GoTool@0
@@ -84,7 +82,47 @@ steps:
 - template: esrp-sign.yml
   parameters:
     folderPath: "$(System.DefaultWorkingDirectory)/_dist"
-    isEnableSign: true
+    isInstallDotNet: true
+    isWindowsSign: true
+
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      mkdir $(System.DefaultWorkingDirectory)/_sign
+      cp -rf $(System.DefaultWorkingDirectory)/_dist/* $(System.DefaultWorkingDirectory)/_sign
+  displayName: 'Copy files for linux signing'
+
+- template: esrp-sign.yml
+  parameters:
+    folderPath: "$(System.DefaultWorkingDirectory)/_sign"
+    isInstallDotNet: false
+    isLinuxSign: true
+    linuxFilePattern: "helm"
+
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      cd $(System.DefaultWorkingDirectory)/_sign
+      ls
+      mv ./darwin-amd64/helm ./darwin-amd64/helm.asc
+      cp ./darwin-amd64/helm.asc $(System.DefaultWorkingDirectory)/_dist/darwin-amd64
+      mv ./darwin-arm64/helm ./darwin-arm64/helm.asc
+      cp ./darwin-arm64/helm.asc $(System.DefaultWorkingDirectory)/_dist/darwin-arm64
+      mv ./linux-386/helm ./linux-386/helm.asc
+      cp ./linux-386/helm.asc $(System.DefaultWorkingDirectory)/_dist/linux-386
+      mv ./linux-amd64/helm ./linux-amd64/helm.asc
+      cp ./linux-amd64/helm.asc $(System.DefaultWorkingDirectory)/_dist/linux-amd64
+      mv ./linux-arm/helm ./linux-arm/helm.asc
+      cp ./linux-arm/helm.asc $(System.DefaultWorkingDirectory)/_dist/linux-arm
+      mv ./linux-arm64/helm ./linux-arm64/helm.asc
+      cp ./linux-arm64/helm.asc $(System.DefaultWorkingDirectory)/_dist/linux-arm64
+      mv ./linux-ppc64le/helm ./linux-ppc64le/helm.asc
+      cp ./linux-ppc64le/helm.asc $(System.DefaultWorkingDirectory)/_dist/linux-ppc64le
+      mv ./linux-s390x/helm ./linux-s390x/helm.asc
+      cp ./linux-s390x/helm.asc $(System.DefaultWorkingDirectory)/_dist/linux-s390x
+  displayName: 'Copy .asc files'
 
 - task: Bash@3
   inputs:
@@ -97,15 +135,55 @@ steps:
       echo 'check content ...'
       ls _dist
       echo 'Done ...'
-      echo 'Ready to publish file: helm-$(VERSION)-$(PUBLISH_ARC) ...'
-  displayName: 'Release'
+  displayName: 'Archive'
+
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      mkdir $(System.DefaultWorkingDirectory)/_sign2
+      cp -rf $(System.DefaultWorkingDirectory)/_dist/*.tar.gz $(System.DefaultWorkingDirectory)/_sign2
+  displayName: 'Copy files for linux signing'
+
+- template: esrp-sign.yml
+  parameters:
+    folderPath: "$(System.DefaultWorkingDirectory)/_sign2"
+    isInstallDotNet: false
+    isLinuxSign: true
+    linuxFilePattern: "*.tar.gz"
+
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: |
+      cd $(System.DefaultWorkingDirectory)/_sign2
+      ls
+      mv helm-$(VERSION)-darwin-amd64.tar.gz helm-$(VERSION)-darwin-amd64.tar.gz.asc
+      mv helm-$(VERSION)-darwin-arm64.tar.gz helm-$(VERSION)-darwin-arm64.tar.gz.asc
+      mv helm-$(VERSION)-linux-386.tar.gz helm-$(VERSION)-linux-386.tar.gz.asc
+      mv helm-$(VERSION)-linux-amd64.tar.gz helm-$(VERSION)-linux-amd64.tar.gz.asc
+      mv helm-$(VERSION)-linux-arm.tar.gz helm-$(VERSION)-linux-arm.tar.gz.asc
+      mv helm-$(VERSION)-linux-arm64.tar.gz helm-$(VERSION)-linux-arm64.tar.gz.asc
+      mv helm-$(VERSION)-linux-ppc64le.tar.gz helm-$(VERSION)-linux-ppc64le.tar.gz.asc
+      mv helm-$(VERSION)-linux-s390x.tar.gz helm-$(VERSION)-linux-s390x.tar.gz.asc
+      ls
+  displayName: 'Rename .asc files'
 
 - task: CopyFiles@2
   inputs:
     sourceFolder: '$(System.DefaultWorkingDirectory)/_dist'
     Contents: |
-      helm-$(VERSION)-$(PUBLISH_ARC).zip
+       helm-$(VERSION)-windows-amd64.zip
+       helm-*.tar.gz
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
+
+- task: CopyFiles@2
+  inputs:
+    sourceFolder: '$(System.DefaultWorkingDirectory)/_sign2'
+    Contents: |
+       helm-*.tar.gz.asc
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+
 - task: PublishBuildArtifacts@1
   inputs:
      artifactName: 'release'
